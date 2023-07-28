@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <mdq:check xmlns:mdq="https://nceas.ucsb.edu/mdqe/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://nceas.ucsb.edu/mdqe/v1 ../schemas/schema1.xsd">
+    <id>resource.distributionContactIdentifier.present</id>
+    <name>Resource Distribution Contact Identifier</name>
+    <description>Check that a distribution contact identifier exists.</description>
+    <type>accessible</type>
+    <level>REQUIRED</level>
+    <environment>rscript</environment>
+    <code><![CDATA[
+    if (!exists("distributionContactIdentifier")){
+  status = "FAILURE"
+  message <-"No distribution contact identifier was found."
+} else{
+  missing = c()
+  j=0
+  IDCount=0
+  # If only a single value is returned (vs type "list"), then convert to a list
+  # for easier processing
+  if(length(distributionContactIdentifier)==1){
+    distributionContactIdentifier = list(distributionContactIdentifier)
+  }
+  
+  if(length(Distributioncontact)==1){
+    Distributioncontact = list(Distributioncontact)
+  } 
+
+    for (i in 1:length(distributionIDbool)){
+      IDCount=IDCount+1
+      if (distributionIDbool[i]==F){
+        id=NA
+      }else{
+        j=j+1
+        id = distributionContactIdentifier[j]
+      }
+      creat=Distributioncontact[i]
+      if (length(creat)==0 | is.na(creat) | is.null(creat)){
+        creat=i
+      }
+      if(is.na(id)){
+        missing=append(missing,creat)
+      }
+    }
+    if(length(missing) == 1){
+      message = paste0("This 1 distribution contact (out of ",IDCount," distribution contacts) doesn't have an ID : ", missing[1])
+      status = "FAILURE"
+      
+    }else if(length(missing) > 1 & length(missing) < 5){
+      message = paste0("These ",length(missing)," distribution contacts  (out of ",IDCount," distribution contacts) don't have an ID: ", paste(missing,collapse=","))
+      status="FAILURE"
+    }else if (length(missing) > 5){
+      message = paste0("These ",length(missing)," distribution contacts  (out of ",IDCount," distribution contacts) don't have an ID: ", paste(missing[1:5],collapse=",")," and ",length(missing)-5," other(s)")
+      status="FAILURE"
+    }else{
+      message = "All distribution contacts have an ID specified."
+      status = "SUCCESS"
+    }
+  }
+mdq_result <- list(status = status,
+                   output = list(list(value = message)))
+    
+          ]]></code>
+   <selector>
+      <name>distributionContactIdentifier</name>
+      <xpath>
+          /eml/*/associatedParty/role[RoleType='distributor']/text()[normalize-space()] |
+          /eml/*/contact/userId/text()[normalize-space()] |
+          //*/distributionInfo/MD_Distribution/distributor/MD_Distributor/distributorContact/CI_ResponsibleParty[normalize-space(role/CI_RoleCode)='distributor']/party/*/partyIdentifier/MD_Identifier/code |
+          //*/distributionInfo/MD_Distribution/distributor/MD_Distributor/distributorContact/CI_ResponsibleParty[normalize-space(role/CI_RoleCode)='pointOfContact']/party/*/partyIdentifier/MD_Identifier/code
+      </xpath>
+   </selector>
+    <selector>
+    <name>Distributioncontact</name>
+    <xpath>/*[local-name() = 'eml']/*/associatedParty/role[RoleType='distributor']//text()[normalize-space()] |
+          /*[local-name() = 'eml']/*/contact/individualName/surName/text()[normalize-space()] |
+          /*[local-name() = 'eml']/*/contact/organizationName/text()[normalize-space()]</xpath>
+    </selector>
+<selector>
+<name>distributionIDbool</name>
+<xpath>   /eml/*/associatedParty/role[RoleType='distributor'] |
+          /eml/*/contact/userId
+ </xpath>
+<subSelector>
+  <name>...</name>
+  <xpath>boolean(./text()[normalize-space()])</xpath>
+</subSelector>
+</selector>
+   <dialect>
+      <name>DataCite 4</name>
+      <xpath>boolean(/*[local-name() = 'resource'])</xpath>
+   </dialect>
+   <dialect>
+      <name>Ecological Metadata Language</name>
+      <xpath>boolean(/*[local-name() = 'eml'])</xpath>
+   </dialect>
+   <dialect>
+      <name>ISO 19115 and ISO 19115-2 / ISO 19139, ISO 19139-2, ISO 19115-1, ISO 19115-3 </name>
+      <xpath>boolean(/*[local-name() = 'MI_Metadata' or local-name() = 'MD_Metadata'])</xpath>
+   </dialect>
+</mdq:check>

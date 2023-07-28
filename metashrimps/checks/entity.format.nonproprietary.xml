@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <mdq:check xmlns:mdq="https://nceas.ucsb.edu/mdqe/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://nceas.ucsb.edu/mdqe/v1 ../schemas/schema1.xsd">
+    <id>entity.type.nonproprietary</id>
+    <name>Non proprietary entity format</name>
+    <description>Check that all entities use non-propietary formats.</description>
+    <type>reusable</type>
+    <level>REQUIRED</level>
+    <environment>rscript</environment>
+    <code><![CDATA[
+      # Check the extensions of entities names
+      # An additional step is made in this check - if any entities with a Microsoft Excel mediaType are found, then an informational message is printed as a tip to
+      # ensure that CSV files are included that correspond to the Excel file. As it is not possible to know if the dataset author has exported tabs from the
+      # Excel file into more reusable CSV format, this tip is printed.
+
+      getExtension <- function(file){
+      ex <- strsplit(basename(file), split="\\.")[[1]]
+      return(ex[-1])
+    }
+      maxPrint = 5
+      excelExt = c("xlsx","xls")
+      excelFileFound = FALSE
+      formatlist = read.csv(paste0(path_files,"/formatlist.csv"))
+      unknownformat=list()
+      proprietaryFound=list()
+      noextension=list()
+      noname=0
+      # Are any entity formats present?
+      if (!exists("entityNames") ){
+        message = "No data entities extension were found in entity name so unable to check for proprietary formats."
+        status = "FAILURE"
+      }else{
+        # Check each entity format and see if it is in the 'proprietary' list, which
+        # is based on all formats from DataONE that have been manually determined to be
+        # proprietary
+      for (name in entityNames){
+        if (length(name)==0 | is.null(name) | is.na(name)){
+          noname=noname+1
+        }
+        known=FALSE
+        if (length(getExtension(name))==0){
+            noextension=append(noextension,name)
+          }else{
+        for (i in 1:length(formatlist$File.Extension)){
+          if (tolower(getExtension(name))==formatlist$File.Extension[i]){
+            known=TRUE
+            if (formatlist$isProprietary[i]==" Y"){
+              proprietaryFound=append(proprietaryFound,name)
+            }
+          }
+          if(tolower(getExtension(name)) %in% excelExt){
+            excelFileFound = TRUE
+          }
+        }
+        if (!known){
+          unknownformat=append(unknownformat, name)
+        }
+      }
+    }
+        output=""
+        if (noname>0){
+          output=paste0(noname," entities don't have a name so unable to check for their formats.")
+          }else if (length(noextension)>0){
+            if (length(noextension)>=maxPrint){
+              output=paste0(length(noextension)," entities don't have an extension in their names so unable to check for their formats: ",paste(noextension[1:maxPrint],collapse=", "),". ")
+            }else output=paste0(length(noextension)," entities don't have an extension in their names so unable to check for their formats: ",paste(noextension, collapse=", "),". ")
+          }
+        if(length(proprietaryFound) > 0){
+          if (length(proprietaryFound)>=maxPrint){
+           output = paste0("It is recommended that non-proprietary file formats be used when possible. ",output," These ",length(proprietaryFound)," entities (out of ",length(entityNames)," total entities) have a non-proprietary format: ",paste(proprietaryFound[0:maxPrint],collapse=","),"...")
+          }else output = paste0("It is recommended that non-proprietary file formats be used when possible. ",output," These ",length(proprietaryFound)," entities (out of ",length(entityNames)," total entities) have a non-proprietary format: ",paste(proprietaryFound,collapse=","))
+         if (length(unknownformat)>0){
+            output=paste0(output," and ",length(unknownformat)," entities have unknown formats." )
+          }
+          if(excelFileFound){
+            message = paste0(output," TIP: If you have not already, upload a csv version for any excel file(s) included. ")
+            status = "FAILURE"
+          }else{
+            message=output
+            status ="FAILURE"
+          }
+        }else{
+         if (length(unknownformat)>0){
+          if(length(unknownformat)==length(entityNames)){
+            output=paste0(output,"All entities have unknown formats so we are unable to check whether they are proprietaries or not.")
+          }else if (length(unknownformat)>=maxPrint){
+            output=paste0(output,length(unknownformat)," entities have unknown formats so unable to check whether they are proprietaries: ",paste(unknownformat[0:maxPrint], collapse=", "),"... ")
+          }else output=paste0(output,length(unknownformat)," entities have unknown formats so unable to check whether they are proprietaries: ",paste(unknownformat, collapse=", "),". ")
+          }
+          if (output==""){
+          message=paste0("No proprietary entity formats were found.")
+          status = "SUCCESS"
+          }else if (length(unknownformat)+length(noname)+length(noextension)==length(entityNames)){
+          message=output
+          status = "WARNING"
+          }else{
+          message=paste0(output," Else, no proprietary formats were detected.")
+          status="WARNING"
+          }
+        }
+      }
+      mdq_result <- list(status = status,
+                         output = list(list(value = message)))
+
+    ]]></code>
+    <selector>
+    <name>entityNames</name>
+    <xpath>/eml/dataset/*/entityName</xpath>
+    </selector>
+    <dialect>
+    <name>Ecological Metadata Language</name>
+    <xpath>boolean(/*[local-name() = 'eml'])</xpath>
+    </dialect>
+    </mdq:check>

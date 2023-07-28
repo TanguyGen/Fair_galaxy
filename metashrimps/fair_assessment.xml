@@ -1,0 +1,34 @@
+<tool id="fair_assessment" name="Production of a FAIR assessment report" version="0.1.0+galaxy0">
+	<description> Create a draft of Data Paper from metadata </description>
+    <requirements>
+	   <requirement type="package" version="4.3.1">r-base</requirement>
+       <requirement type="package" version="1.1.2">r-dplyr</requirement>
+	   <requirement type="package" version="1.3.5">r-xml2</requirement>
+	   <requirement type="package" version="0.2.1">r-metadig</requirement>
+	   <requirement type="package" version="2.3">r-gridExtra</requirement>
+	   <requirement type="package" version="3.4.2">r-ggplot2</requirement>
+	   <requirement type="package" version="1.5.0">r-stringr</requirement>
+	   <requirement type="package" version="1.4.6">r-httr</requirement>
+	   <requirement type="package" version="2.19.0">r-gdata</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+       Rscript
+         '$__tool_directory__/fair_assessment.R'
+		 '$__tool_directory__/checks'
+		 '$__tool_directory__/files'
+		 '$__tool_directory__'
+         '$metadata' &&
+	ls
+    ]]></command>
+    <inputs>
+		<param name="metadata" type="data" format="xml" label="Upload metadata" help="Insert only metadata using EML standard"/>
+    </inputs>
+    <outputs>
+		<data name="FAIR_Quality_Report" from_work_dir="Fair_Quality_Report.pdf" format="pdf" label="FAIR quality assesment report"/>
+    </outputs>
+<help><![CDATA[
+
+todo
+
+]]></help>
+</tool>
